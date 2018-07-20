@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2035
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SEAID", "SEAID\SEAID.vcxproj", "{76D436D4-DE6A-4A73-B9D7-B3750AAC39D9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Release|ARM = Release|ARM
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{76D436D4-DE6A-4A73-B9D7-B3750AAC39D9}.Debug|ARM.ActiveCfg = Debug|ARM
+		{76D436D4-DE6A-4A73-B9D7-B3750AAC39D9}.Debug|ARM.Build.0 = Debug|ARM
+		{76D436D4-DE6A-4A73-B9D7-B3750AAC39D9}.Release|ARM.ActiveCfg = Release|ARM
+		{76D436D4-DE6A-4A73-B9D7-B3750AAC39D9}.Release|ARM.Build.0 = Release|ARM
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {56120743-CC08-4E1A-BF27-A1D15EC09AD8}
+	EndGlobalSection
+EndGlobal
