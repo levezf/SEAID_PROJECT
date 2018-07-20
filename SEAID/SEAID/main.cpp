@@ -47,6 +47,9 @@ void *captureImage(void *p);
 void startCapture(SEAID seaid);
 void error(uint8_t led, String message);
 bool hasFingerprint(Mat frame);
+SEAID initiate(SEAID seaid);
+void bootAnimation(SEAID seaid);
+void animationShutdown(SEAID seaid);
 pthread_mutex_t lockMutex;	//mutex
 
 /***************************************************************
@@ -55,13 +58,8 @@ pthread_mutex_t lockMutex;	//mutex
 int main(int argc, char **argv) {
 
 	SEAID seaid;
-	seaid.btnShutdown.btn = RPI_V2_GPIO_P1_16;
-	seaid.btnReboot.btn = RPI_V2_GPIO_P1_18;
-	seaid.ledGreen = RPI_V2_GPIO_P1_37;
-	seaid.ledRed = RPI_V2_GPIO_P1_31;
-	seaid.ledYellow = RPI_V2_GPIO_P1_35;
-	seaid.ledReader = RPI_V2_GPIO_P1_33;
-	pthread_t t_btnShutdown, t_btnReboot, t_captureImage;
+	seaid = initiate(seaid);
+	pthread_t t_btnShutdown, t_btnReboot, t_captureImage, t_controlSystem;
 	int ret;
 	
 
@@ -74,15 +72,14 @@ int main(int argc, char **argv) {
 	if (!bcm2835_init()) {
 		error(seaid.ledRed, "Erro ao inicializar biblioteca bcm2835.\n");
 	}
-	bcm2835_gpio_write(seaid.ledGreen, HIGH);
-	bcm2835_gpio_write(seaid.ledYellow, LOW);
-	bcm2835_gpio_write(seaid.ledRed, LOW);
-	bcm2835_gpio_write(seaid.ledReader, LOW);
+	
 	// Seleciona pinos de saída para LEDs
 	bcm2835_gpio_fsel(seaid.ledGreen, BCM2835_GPIO_FSEL_OUTP);
 	bcm2835_gpio_fsel(seaid.ledRed, BCM2835_GPIO_FSEL_OUTP);
 	bcm2835_gpio_fsel(seaid.ledYellow, BCM2835_GPIO_FSEL_OUTP);
 	bcm2835_gpio_fsel(seaid.ledReader, BCM2835_GPIO_FSEL_OUTP);
+
+	bootAnimation(seaid);
 
 	// Seleciona pinos de entrada para push buttons
 	// Desabilita resistores de pull up/down nesses pinos
@@ -98,7 +95,7 @@ int main(int argc, char **argv) {
 		error(seaid.ledRed, "Erro thread \"t_captureImage\"");
 	}
 
-	// Cria thread para ler estado dos botÃµes
+	// Cria thread para ler estado dos botões
 	ret = pthread_create(&t_btnShutdown, NULL, inputRead, &seaid.btnShutdown);
 	if (ret != 0) {
 		error(seaid.ledRed, "Erro thread \"t_btnShutdown\"");
@@ -107,10 +104,17 @@ int main(int argc, char **argv) {
 	if (ret != 0) {
 		error(seaid.ledRed, "Erro thread \"t_btnReboot\"");
 	}
+
+	// Cria thread para executar comando caso algum botão seja pressionado 
+	ret = pthread_create(&t_controlSystem, NULL, controlSystem, &seaid);
+	if (ret != 0) {
+		error(seaid.ledRed, "Erro thread \"t_controlSystem\"");
+	}
 	// Aguarda as threads terminarem
 	pthread_join(t_captureImage, NULL);
 	pthread_join(t_btnShutdown, NULL);
 	pthread_join(t_btnReboot, NULL);
+	pthread_join(t_controlSystem, NULL);
 
 	// Finaliza biblioteca bcm2835
 	bcm2835_close();
@@ -118,6 +122,68 @@ int main(int argc, char **argv) {
 	pthread_mutex_destroy(&lockMutex);
 
 	return 0;
+}
+/***************************************************************
+* Funação responsável por criar animação com os leds para
+* indicar a inicialização do sistema
+**************************************************************/
+void bootAnimation(SEAID seaid) {
+
+	bcm2835_gpio_write(seaid.ledGreen, LOW);
+	bcm2835_gpio_write(seaid.ledYellow, LOW);
+	bcm2835_gpio_write(seaid.ledRed, LOW);
+	bcm2835_gpio_write(seaid.ledReader, LOW);
+	delay(500);
+	bcm2835_gpio_write(seaid.ledRed, HIGH);
+	delay(500);
+	bcm2835_gpio_write(seaid.ledYellow, HIGH);
+	delay(500);
+	bcm2835_gpio_write(seaid.ledGreen, HIGH);
+	delay(500);
+	bcm2835_gpio_write(seaid.ledGreen, LOW);
+	bcm2835_gpio_write(seaid.ledYellow, LOW);
+	bcm2835_gpio_write(seaid.ledRed, LOW);
+	bcm2835_gpio_write(seaid.ledReader, LOW);
+	delay(500);
+	bcm2835_gpio_write(seaid.ledGreen, HIGH);
+	bcm2835_gpio_write(seaid.ledYellow, HIGH);
+	bcm2835_gpio_write(seaid.ledRed, HIGH);
+	bcm2835_gpio_write(seaid.ledReader, HIGH);
+	delay(500);
+	bcm2835_gpio_write(seaid.ledGreen, HIGH);
+	bcm2835_gpio_write(seaid.ledYellow, LOW);
+	bcm2835_gpio_write(seaid.ledRed, LOW);
+	bcm2835_gpio_write(seaid.ledReader, LOW);
+}
+/***************************************************************
+* Funação responsável por criar animação com os leds para
+* indicar o encerramento do sistema
+**************************************************************/
+void animationShutdown(SEAID seaid) {
+	bcm2835_gpio_write(seaid.ledGreen, HIGH);
+	bcm2835_gpio_write(seaid.ledYellow, HIGH);
+	bcm2835_gpio_write(seaid.ledRed, HIGH);
+	bcm2835_gpio_write(seaid.ledReader, HIGH);
+	delay(500);
+	bcm2835_gpio_write(seaid.ledGreen, LOW);	
+	delay(500);
+	bcm2835_gpio_write(seaid.ledYellow, LOW);
+	delay(500);
+	bcm2835_gpio_write(seaid.ledRed, LOW);
+}
+
+/***************************************************************
+* Funação responsável por iniciar os valores dos pinos 
+* na struct SEAID
+**************************************************************/
+SEAID initiate(SEAID seaid) {
+	seaid.btnShutdown.btn = RPI_V2_GPIO_P1_16;
+	seaid.btnReboot.btn = RPI_V2_GPIO_P1_18;
+	seaid.ledGreen = RPI_V2_GPIO_P1_37;
+	seaid.ledRed = RPI_V2_GPIO_P1_31;
+	seaid.ledYellow = RPI_V2_GPIO_P1_35;
+	seaid.ledReader = RPI_V2_GPIO_P1_33;
+	return seaid;
 }
 /***************************************************************
 * Funação responsável por exibir as mensagens de erro
@@ -129,7 +195,7 @@ void error(uint8_t led, String message) {
 	exit(EXIT_FAILURE);
 }
 /***************************************************************
-* Funação responsável por controlar os LEDs
+* Funação responsável por controlar a ação dos botões
 **************************************************************/
 void *controlSystem(void *p) {
 	// Faz o cast do ponteiro para voltar a ser um inteiro
@@ -140,12 +206,14 @@ void *controlSystem(void *p) {
 		// Trava o mutex antes de acessar variÃ¡vel led_state
 		pthread_mutex_lock(&lockMutex);
 		// Atualiza estado do LED - liga ou desliga
-		if (seaid->btnShutdown.btn_state)
+		if (seaid->btnShutdown.btn_state) {
+			animationShutdown(*seaid);
 			system("sudo poweroff");
-
-		if (seaid->btnReboot.btn_state)
+		}
+		if (seaid->btnReboot.btn_state) {
+			animationShutdown(*seaid);
 			system("sudo reboot");
-		
+		}
 		// Libera o mutex
 		pthread_mutex_unlock(&lockMutex);
 		// Pequeno delay
