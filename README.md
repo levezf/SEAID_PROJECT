@@ -5,7 +5,8 @@ O presente trabalho aborda a aquisição de impressões digitais orientada a sis
 
 # Utilizado *environmentPreparation.sh*
 
-Para executar este comando, deve-se utilizar a seguinte expressão:
+Para executar este comando, deve-se utilizar a seguinte expressão:  
+
 `chmod +x environmentPreparation.sh && sed -i -e 's/\r$//' environmentPreparation.sh && ./environmentPreparation.sh`
 
 # Contato
